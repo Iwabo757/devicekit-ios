@@ -44,7 +44,7 @@ debug:
 release:
 	@$(MAKE) build CONFIGURATION=Release
 
-# Create unsigned IPA with XCUITest runner for real iOS devices
+# Build unsigned IPA with XCUITest runner for real iOS devices
 ipa-unsigned:
 	@echo "Building unsigned test runner for arm64 iOS devices..."
 	xcodebuild build-for-testing \
@@ -56,42 +56,43 @@ ipa-unsigned:
 		CODE_SIGN_IDENTITY="" \
 		CODE_SIGNING_REQUIRED=NO \
 		CODE_SIGNING_ALLOWED=NO | xcbeautify
+
 	@scripts/patch-runner.sh "$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphoneos"
-        @echo "Packaging main app IPA..."
-        @rm -rf $(EXPORT_PATH)/Payload
-        @rm -f $(EXPORT_PATH)/$(SCHEME).ipa
-        @mkdir -p $(EXPORT_PATH)/Payload
-        @cp -r "$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphoneos/$(SCHEME).app" "$(EXPORT_PATH)/Payload/"
-
-        @echo "Checking for BroadcastUploadExtension..."
-        @EXTENSION="$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphoneos/BroadcastUploadExtension.appex"; \
-        if [ ! -d "$$EXTENSION" ]; then \
-                EXTENSION=$$(find "$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphoneos" -name "BroadcastUploadExtension.appex" -type d -print -quit); \
-        fi; \
-        if [ -z "$$EXTENSION" ] || [ ! -d "$$EXTENSION" ]; then \
-                echo "ERROR: BroadcastUploadExtension.appex was not built."; \
-                exit 1; \
-        fi; \
-        mkdir -p "$(EXPORT_PATH)/Payload/$(SCHEME).app/PlugIns"; \
-        rm -rf "$(EXPORT_PATH)/Payload/$(SCHEME).app/PlugIns/BroadcastUploadExtension.appex"; \
-        cp -R "$$EXTENSION" "$(EXPORT_PATH)/Payload/$(SCHEME).app/PlugIns/BroadcastUploadExtension.appex"
-
-        @echo "Verifying embedded extension..."
-        @test -d "$(EXPORT_PATH)/Payload/$(SCHEME).app/PlugIns/BroadcastUploadExtension.appex"
-        @cd $(EXPORT_PATH) && zip -r $(SCHEME).ipa Payload
-        @rm -rf $(EXPORT_PATH)/Payload
+	@echo "Packaging runner IPA..."
+	@rm -rf $(EXPORT_PATH)/Payload
+	@rm -f $(EXPORT_PATH)/$(SCHEME)-runner.ipa
+	@mkdir -p $(EXPORT_PATH)/Payload
+	@cp -r "$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphoneos/$(SCHEME)UITests-Runner.app" "$(EXPORT_PATH)/Payload/"
+	@cd $(EXPORT_PATH) && zip -r $(SCHEME)-runner.ipa Payload
 	@rm -rf $(EXPORT_PATH)/Payload
 	@echo "Runner IPA created at: $(EXPORT_PATH)/$(SCHEME)-runner.ipa"
+
 	@echo "Packaging main app IPA..."
 	@rm -rf $(EXPORT_PATH)/Payload
 	@rm -f $(EXPORT_PATH)/$(SCHEME).ipa
 	@mkdir -p $(EXPORT_PATH)/Payload
-	@cp -r "$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphoneos/$(SCHEME).app" $(EXPORT_PATH)/Payload/
+	@cp -r "$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphoneos/$(SCHEME).app" "$(EXPORT_PATH)/Payload/"
+
+	@echo "Checking for BroadcastUploadExtension..."
+	@EXTENSION="$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphoneos/BroadcastUploadExtension.appex"; \
+	if [ ! -d "$$EXTENSION" ]; then \
+		EXTENSION=$$(find "$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphoneos" -name "BroadcastUploadExtension.appex" -type d -print -quit); \
+	fi; \
+	if [ -z "$$EXTENSION" ] || [ ! -d "$$EXTENSION" ]; then \
+		echo "ERROR: BroadcastUploadExtension.appex was not built."; \
+		exit 1; \
+	fi; \
+	mkdir -p "$(EXPORT_PATH)/Payload/$(SCHEME).app/PlugIns"; \
+	rm -rf "$(EXPORT_PATH)/Payload/$(SCHEME).app/PlugIns/BroadcastUploadExtension.appex"; \
+	cp -R "$$EXTENSION" "$(EXPORT_PATH)/Payload/$(SCHEME).app/PlugIns/BroadcastUploadExtension.appex"
+
+	@echo "Verifying embedded extension..."
+	@test -d "$(EXPORT_PATH)/Payload/$(SCHEME).app/PlugIns/BroadcastUploadExtension.appex"
 	@cd $(EXPORT_PATH) && zip -r $(SCHEME).ipa Payload
 	@rm -rf $(EXPORT_PATH)/Payload
 	@echo "App IPA created at: $(EXPORT_PATH)/$(SCHEME).ipa"
 
-# Build XCUITest runner for iOS Simulator (arm64 — Apple Silicon)
+# Build XCUITest runner for iOS Simulator (arm64 - Apple Silicon)
 sim-zip-arm64:
 	@echo "Building $(SCHEME) XCUITest runner for iOS Simulator (arm64)..."
 	xcodebuild build-for-testing \
@@ -106,12 +107,12 @@ sim-zip-arm64:
 		ARCHS=arm64 | xcbeautify
 	@mkdir -p $(EXPORT_PATH)
 	@cp -r "$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphonesimulator/$(SCHEME)UITests-Runner.app" $(EXPORT_PATH)/
-	@scripts/patch-runner.sh "$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphonesimulator" "$(EXPORT_PATH)"
+	scripts/patch-runner.sh "$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphonesimulator" "$(EXPORT_PATH)"
 	@cd $(EXPORT_PATH) && zip -r $(SCHEME)-Sim-arm64.zip $(SCHEME)UITests-Runner.app
 	@rm -rf "$(EXPORT_PATH)/$(SCHEME)UITests-Runner.app"
 	@echo "Simulator zip created at: $(EXPORT_PATH)/$(SCHEME)-Sim-arm64.zip"
 
-# Build XCUITest runner for iOS Simulator (x86_64 — Intel)
+# Build XCUITest runner for iOS Simulator (x86_64 - Intel)
 sim-zip-x86_64:
 	@echo "Building $(SCHEME) XCUITest runner for iOS Simulator (x86_64)..."
 	xcodebuild build-for-testing \
@@ -126,7 +127,7 @@ sim-zip-x86_64:
 		ARCHS=x86_64 | xcbeautify
 	@mkdir -p $(EXPORT_PATH)
 	@cp -r "$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphonesimulator/$(SCHEME)UITests-Runner.app" $(EXPORT_PATH)/
-	@scripts/patch-runner.sh "$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphonesimulator" "$(EXPORT_PATH)"
+	scripts/patch-runner.sh "$(BUILD_DIR)/Build/Products/$(CONFIGURATION)-iphonesimulator" "$(EXPORT_PATH)"
 	@cd $(EXPORT_PATH) && zip -r $(SCHEME)-Sim-x86_64.zip $(SCHEME)UITests-Runner.app
 	@rm -rf "$(EXPORT_PATH)/$(SCHEME)UITests-Runner.app"
 	@echo "Simulator zip created at: $(EXPORT_PATH)/$(SCHEME)-Sim-x86_64.zip"
